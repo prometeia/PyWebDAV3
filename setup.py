@@ -4,7 +4,6 @@ from __future__ import absolute_import
 from io import open
 from promebuilder.utils import VERSIONFILE, gen_metadata, setup
 import os
-import six
 import pywebdav
 
 
@@ -70,7 +69,7 @@ with open(os.path.join(ROOT, 'README.md'), "w", encoding='utf-8') as readme:
 
 # Creating standard version file
 with open(os.path.join(ROOT, VERSIONFILE), "w", encoding='utf-8') as readme:
-    readme.write(six.u(pywebdav.__version__))
+    readme.write(pywebdav.__version__)
 
 
 METADATA = gen_metadata(
