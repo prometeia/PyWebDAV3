@@ -62,3 +62,32 @@ coverage.xml
 venv/
 ENV/
 
+
+# AUTO
+version
+README.md
+
+### build process artifacts
+channel
+branch
+buildnum
+build
+build_trigger_number
+win-*/
+linux-*/
+
+# Sonar
+.scannerwork/
+nohup.out
+
+# eclipse pydev
+.directory
+.project
+.pydevproject
+.ropeproject
+.jsdtscope
+.settings
+pylintrc
+tox.ini
+/dump/
+/tests/robotframework/Results/
