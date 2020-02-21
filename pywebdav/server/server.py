@@ -43,14 +43,16 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle requests in a separate thread."""
 
 def runserver(
-         port = 8008, host='localhost',
-         directory='/tmp',
-         verbose = False,
-         noauth = False,
-         user = '',
-         password = '',
-         handler = DAVAuthHandler,
-         server = ThreadedHTTPServer):
+        port = 8008, host='localhost',
+        directory='/tmp',
+        verbose = False,
+        noauth = False,
+        user = '',
+        password = '',
+        handler = DAVAuthHandler,
+        server = ThreadedHTTPServer,
+        doserve=True
+    ):
 
     directory = directory.strip()
     directory = directory.rstrip('/')
@@ -95,14 +97,17 @@ def runserver(
         log.info('Using %s as base url for PROPFIND requests' % handler._config.DAV.baseurl)
     handler.IFACE_CLASS.baseurl = handler._config.DAV.baseurl
 
-    # initialize server on specified port
-    runner = server( (host, port), handler )
-    print(('Listening on %s (%i)' % (host, port)))
+    runner = server((host, port), handler)
+    if doserve:
+        # initialize server on specified port
+        print(('Listening on %s (%i)' % (host, port)))
+        try:
+            runner.serve_forever()
+        except KeyboardInterrupt:
+            log.info('Killed by user')
+    else:
+        return runner
 
-    try:
-        runner.serve_forever()
-    except KeyboardInterrupt:
-        log.info('Killed by user')
 
 usage = """PyWebDAV server (version %s)
 Standalone WebDAV server

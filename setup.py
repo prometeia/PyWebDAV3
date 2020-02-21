@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 
 from __future__ import absolute_import
-from setuptools import setup, find_packages
 from io import open
+from promebuilder.utils import VERSIONFILE, gen_metadata, setup
 import os
-
 import pywebdav
 
-CHANGES = open(os.path.join(os.path.dirname(__file__), 'doc/Changes'), 'r', encoding='utf-8').read()
 
+ROOT = os.path.dirname(__file__)
+CHANGES = open(os.path.join(ROOT, 'doc/Changes'), 'r', encoding='utf-8').read()
 DOC = """\
 WebDAV library for python3
 ==========================
@@ -62,18 +62,35 @@ Changes
 %s
 """ % CHANGES
 
-setup(name='PyWebDAV3',
-      description=pywebdav.__doc__,
-      author=pywebdav.__author__,
-      author_email=pywebdav.__email__,
-      maintainer=pywebdav.__author__,
-      maintainer_email=pywebdav.__email__,
-      url='https://github.com/andrewleech/PyWebDAV3',
-      platforms=['Unix', 'Windows'],
-      license=pywebdav.__license__,
-      version=pywebdav.__version__,
-      long_description=DOC,
-      classifiers=[
+
+# Creating standard long description file
+with open(os.path.join(ROOT, 'README.md'), "w", encoding='utf-8') as readme:
+    readme.write(DOC)
+
+# Creating standard version file
+with open(os.path.join(ROOT, VERSIONFILE), "w", encoding='utf-8') as readme:
+    readme.write(pywebdav.__version__)
+
+
+METADATA = gen_metadata(
+    name="pythowebdav",
+    description=pywebdav.__doc__,
+    email=pywebdav.__email__,
+    url="https://github.com/prometeia/pythowebdav",
+    keywords=['webdav', 'server', 'dav', 'standalone', 'library', 'gpl', 'http', 'rfc2518', 'rfc 2518'],
+    package_data={
+        'pywebdav': ['server/config.ini'],
+    },
+    entry_points={'console_scripts': [
+        'davserver = pywebdav.server.server:run'
+    ]}
+)
+METADATA.update(dict(
+    author=pywebdav.__author__,
+    maintainer="Prometeia",
+    maintainer_email="pytho_support@prometeia.com",
+    license=pywebdav.__license__,
+    classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Environment :: Web Environment',
@@ -84,21 +101,9 @@ setup(name='PyWebDAV3',
         'Operating System :: POSIX',
         'Programming Language :: Python',
         'Topic :: Software Development :: Libraries',
-        ],
-      keywords=['webdav',
-                'server',
-                'dav',
-                'standalone',
-                'library',
-                'gpl',
-                'http',
-                'rfc2518',
-                'rfc 2518'
-                ],
-      packages=find_packages(),
-      zip_safe=False,
-      entry_points={
-        'console_scripts': ['davserver = pywebdav.server.server:run']
-        },
-      install_requires = ['six']
-      )
+        ]
+))
+
+
+if __name__ == '__main__':
+    setup(METADATA)
