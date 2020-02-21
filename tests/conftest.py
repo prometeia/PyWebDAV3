@@ -4,42 +4,43 @@ import shutil
 import pytest
 import tempfile
 import threading
-from pywebdav.server.server import runserver, setupDummyConfig
-from pywebdav.server.fileauth import DAVAuthHandler
+
+from pywebdav.server.config import DummyConfig
+from pywebdav.server.server import runserver
 
 USER = 'test'
 PASSWORD = 'pass'
 PORT = 38028
 HOST = '127.0.0.1'
-SERVERSCRIPT = os.path.join(os.path.dirname(__file__), '..', 'pywebdav', 'server', 'server.py')
+
+
+class DAVTestConfig(object):
+    def __init__(self, serverroot):
+        self.DAV = DummyConfig(
+            verbose=True,
+            directory=serverroot,
+            port=PORT,
+            host=HOST,
+            noauth=False,
+            user=USER,
+            password=PASSWORD,
+            daemonize=False,
+            daemonaction='stop',
+            counter=0,
+            lockemulation=True,
+            mimecheck=True,
+            chunked_http_response=True,
+            http_request_use_iterator=True,
+            http_response_use_iterator=True,
+            baseurl='')
 
 
 class MyRunner(threading.Thread):
 
     def __init__(self, serverroot):
         super(MyRunner, self).__init__(name='pywebdav')
-
-        _dc = {
-            'verbose': True,
-            'directory': serverroot,
-            'port': PORT,
-            'host': HOST,
-            'noauth': False,
-            'user': USER,
-            'password': PASSWORD,
-            'daemonize': False,
-            'daemonaction': 'stop',
-            'counter': 0,
-            'lockemulation': True,
-            'mimecheck': True,
-            'chunked_http_response': True,
-            'http_request_use_iterator': True,
-            'http_response_use_iterator': True,
-            'baseurl': ''
-        }
-        handler = DAVAuthHandler
-        handler._config = setupDummyConfig(**_dc)
-        self.runner = runserver(PORT, HOST, serverroot, doserve=False, handler=handler)
+        conf = DAVTestConfig(serverroot)
+        self.runner = runserver(conf, doserve=False)
 
     def run(self):
         self.runner.serve_forever()
@@ -58,7 +59,7 @@ def pywebdav_server_runner():
     # Ensure davserver has time to startup
     time.sleep(1)
 
-    yield "http://{}:{}".format(HOST, PORT), USER, PASSWORD
+    yield "http://{}:{}".format(HOST, PORT), USER, PASSWORD, root
 
     print('Stopping davserver')
     sthread.stop()

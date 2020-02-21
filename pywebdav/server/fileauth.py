@@ -22,14 +22,10 @@ This is an example implementation of a DAVserver using the DAV package.
 
 """
 
-from __future__ import absolute_import
-import sys
 import logging
-
+import warnings
 from pywebdav.lib.WebDAVServer import DAVRequestHandler
-from pywebdav.lib.dbconn import Mconn
 
-from .fshandler import FilesystemHandler
 
 log = logging.getLogger()
 
@@ -42,13 +38,27 @@ class DAVAuthHandler(DAVRequestHandler):
 
     # Do not forget to set IFACE_CLASS by caller
     # ex.: IFACE_CLASS = FilesystemHandler('/tmp', 'http://localhost/')
-    verbose = False
+    _config = None
+
+    @property
+    def verbose(self):
+        return self._config.DAV.verbose
+
+    @property
+    def DO_AUTH(self):
+        return self._config.DAV.noauth
+
+    @classmethod
+    def inject_config(cls, config):
+        if cls._config is not None:
+            warnings.warn("Configuration already injected")
+        cls._config = config
 
     def _log(self, message):
         if self.verbose:
             log.info(message)
 
-    def get_userinfo(self,user,pw,command):
+    def get_userinfo(self, user, pw, command):
         """ authenticate user """
 
         if user == self._config.DAV.user and pw == self._config.DAV.password:
