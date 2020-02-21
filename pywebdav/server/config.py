@@ -113,8 +113,6 @@ class DummyConfig(object):
             log.info('Starting up PyWebDAV server (version %s)', __version__)
         else:
             log.info('Stopping PyWebDAV server (version %s)',__version__)
-        if not self.noauth and self.daemonaction not in ['status', 'stop'] and (not self.user or not self.password):
-            raise ValueError("Missing user/password")
         for logme in ('chunked_http_response', 'http_request_use_iterator', 'http_request_use_iterator'):
             value = 'ON' if self.getboolean(logme) else 'OFF'
             log.info(f"Feature {logme} {value}")
