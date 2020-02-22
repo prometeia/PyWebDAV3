@@ -4,9 +4,8 @@ This module builds on BaseHTTPServer and implements basic authentication
 
 """
 
-from __future__ import absolute_import
 import base64
-import binascii
+from http.client import responses
 import six.moves.BaseHTTPServer
 
 
@@ -56,9 +55,12 @@ class AuthRequestHandler(six.moves.BaseHTTPServer.BaseHTTPRequestHandler):
                 return False
             credentials = base64.decodebytes(credentials.encode()).decode()
             user, password = credentials.split(':')
-            if not self.get_userinfo(user, password, self.command):
-                self.send_autherror(401, b"Authorization Required")
-                return False
+            authcheck = self.get_userinfo(user, password, self.command)
+            if isinstance(authcheck, bool):
+                return authcheck
+            if isinstance(authcheck, int):
+                self.send_autherror(authcheck, bytes(responses[authcheck], encoding='utf8'))
+            return False
         return True
 
     def send_autherror(self, code, message=None):

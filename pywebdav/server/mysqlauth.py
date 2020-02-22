@@ -43,13 +43,9 @@ class MySQLAuthHandler(DAVAuthHandler):
             can_write = Auth[0][3]
             if not can_write and not command in nowrite:
                 self._log('Authentication failed for user %s using command %s' % (user, command))
-                return 0
+                return 403
             else:
                 self._log('Successfully authenticated user %s writable=%s' % (user, can_write))
-                return 1
-        else:
-            self._log('Authentication failed for user %s' % user)
-            return 0
-
+                return True
         self._log('Authentication failed for user %s' % user)
-        return 0
+        return False

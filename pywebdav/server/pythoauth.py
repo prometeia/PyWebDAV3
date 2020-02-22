@@ -41,10 +41,14 @@ class PythoAuthHandler(DAVAuthHandler):
             return
         return ret.text.strip()
 
+    @lru_cache()
     def _pytho_ticket(self, username, password):
         return self._pytho_req('POST', 'auth', auth=(username, password), ttl_hash=get_ttl_hash())
 
-    def is_user_authorized(self, user, path, command):
+    @lru_cache()
+    def is_user_authorized(self, user, path, command, ttl_hash):
+        assert ttl_hash
+        assert command
         # TODO: check command and path against API user details
         if not user or not path:
             return False
@@ -63,11 +67,11 @@ class PythoAuthHandler(DAVAuthHandler):
             res_useraname = None
         if not res_useraname or res_useraname != user:
             self._log(f'Authentication failed for user {user}')
-            return
+            return 401
         self._log(f'Successfully authenticated user {user} for {command}')
-        if not self.is_user_authorized(user, self.path, command):
+        if not self.is_user_authorized(user, self.path, command, ttl_hash=get_ttl_hash()):
             self._log(f'User {user} not authorized for {command} on {self.path}')
-            return
+            return 403
         self._log(f'Succesfully authorized {user} for {command} on {self.path}')
-        return 1
+        return True
 

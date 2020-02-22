@@ -62,10 +62,10 @@ class DAVAuthHandler(DAVRequestHandler):
         """ authenticate user """
         if not self._config.DAV.user or not  self._config.DAV.password:
             log.error("Empty master user/password, cannot authenticate")
-            return 0
+            return
         if user == self._config.DAV.user and pw == self._config.DAV.password:
             log.info('Successfully authenticated user %s' % user)
-            return 1
+            return True
         log.info('Authentication failed for user %s' % user)
-        return 0
+        return False
 
