@@ -158,7 +158,7 @@ class DummyConfig(object):
                 args, 'P:D:H:d:u:p:nvhmJi:c:Ml:TB:',
                 ['host=', 'port=', 'directory=', 'user=', 'password=',
                  'daemon=', 'noauth', 'help', 'verbose', 'mysql',
-                 'icounter=', 'config=', 'nolock', 'nomime', 'loglevel', 'noiter',
+                 'icounter=', 'config=', 'nolock', 'nomime', 'loglevel=', 'noiter',
                  'baseurl=', 'pythoauthserver='])
         except getopt.GetoptError as e:
             print(USAGE)
