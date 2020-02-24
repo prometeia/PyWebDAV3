@@ -113,7 +113,7 @@ class DummyConfig(object):
             log.info('Starting up PyWebDAV server (version %s)', __version__)
         else:
             log.info('Stopping PyWebDAV server (version %s)',__version__)
-        for logme in ('chunked_http_response', 'http_request_use_iterator', 'http_request_use_iterator'):
+        for logme in ('chunked_http_response', 'http_request_use_iterator', 'http_response_use_iterator'):
             value = 'ON' if self.getboolean(logme) else 'OFF'
             log.info(f"Feature {logme} {value}")
 

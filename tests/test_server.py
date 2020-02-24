@@ -22,15 +22,14 @@ def test_get(pywebdav_server):
 
 def test_big_download(pywebdav_server):
     url, user, password, root = pywebdav_server
-    fname = 'bigtestfile.txt'
-    testdata = "BIG TEST BODY X\n" * 2**12
+    fname = 'bigtestfile.xxx'
+    testdata = bytes("BIG TEST BODY X\n" * 2**18, encoding="utf8")
     fullname = os.path.join(root, fname)
-    with open(fullname, 'w') as tgfile:
+    with open(fullname, 'wb') as tgfile:
         for _ in range(10):
             tgfile.write(testdata)
     thesize = os.stat(fullname).st_size
     print(f'{fullname} weights {thesize / 2**20}MB')
     ret = requests.get(url=f'{url}/{fname}', auth=(user, password))
     assert ret.status_code // 100 == 2
-    fullsize = 0
-    assert thesize == fullsize
+    assert thesize == len(ret.content)
