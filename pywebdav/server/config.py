@@ -140,7 +140,8 @@ class DummyConfig(object):
             log.info('Disabled mimetype sniffing (All files will have type application/octet-stream)')
         if self.baseurl:
             log.info('Using %s as base url for PROPFIND requests', self.baseurl)
-
+        else:
+            self.baseurl = f'http://{self.host}:{self.port}'
 
     def update_from_file(self):
         log.info('Reading configuration from %s', self.configfile)
@@ -203,7 +204,7 @@ class DummyConfig(object):
                 self.daemonize = True
                 self.daemonaction = a
             elif o in ['-B', '--baseurl']:
-                self.baseurl = a.lower()
+                self.baseurl = a.rstrip('/')
             elif o in ['--pythoauthserver']:
                 self.pythoauthserver = a
 

@@ -32,9 +32,8 @@ def runserver(conf, doserve=True):
 
     # dispatch directory and host to the filesystem handler
     # This handler is responsible from where to take the data
-    handler.IFACE_CLASS = FilesystemHandler(dv.directory, f'http://{dv.host}:{dv.port}/', dv.verbose)
+    handler.IFACE_CLASS = FilesystemHandler(dv.directory, dv.baseurl, dv.verbose)
     handler.IFACE_CLASS.mimecheck = dv.mimecheck
-    handler.IFACE_CLASS.baseurl = dv.baseurl
 
     log.info(f'Serving data from {dv.directory}')
 

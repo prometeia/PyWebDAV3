@@ -56,9 +56,7 @@ class PythoAuthHandler(DAVAuthHandler):
         def is_my_area(tgpath):
             if not user or not tgpath:
                 return False
-            target = ['', user, 'media']
-            if self.IFACE_CLASS.baseurl:
-                target.insert(1, self.IFACE_CLASS.baseurl)
+            target = self.IFACE_CLASS.basepath.split('/') + [user, 'media']
             return tgpath.split('/')[:len(target)] == target
 
         if command in ('MKCOL'):

@@ -12,6 +12,7 @@ USER = 'test'
 PASSWORD = 'pass'
 PORT = 38028
 HOST = '127.0.0.1'
+CONTEXTROOT = 'ufsa'
 
 
 class DAVTestConfig(object):
@@ -32,15 +33,15 @@ class DAVTestConfig(object):
             chunked_http_response=True,
             http_request_use_iterator=True,
             http_response_use_iterator=True,
-            baseurl='')
+            baseurl=f'http://{HOST}:{PORT}/{CONTEXTROOT}')
 
 
 class MyRunner(threading.Thread):
 
     def __init__(self, serverroot):
         super(MyRunner, self).__init__(name='pywebdav')
-        conf = DAVTestConfig(serverroot)
-        self.runner = runserver(conf, doserve=False)
+        self.conf = DAVTestConfig(serverroot)
+        self.runner = runserver(self.conf, doserve=False)
 
     def run(self):
         self.runner.serve_forever()
@@ -59,8 +60,7 @@ def pywebdav_server_runner():
     # Ensure davserver has time to startup
     time.sleep(1)
 
-    yield "http://{}:{}".format(HOST, PORT), USER, PASSWORD, root
-
+    yield sthread.conf.DAV.baseurl, USER, PASSWORD, root
     print('Stopping davserver')
     sthread.stop()
     sthread.join(timeout=1)

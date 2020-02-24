@@ -68,6 +68,7 @@ class FilesystemHandler(dav_interface):
     to /tmp/gfx/pix
 
     """
+    basepath = ''
 
     def __init__(self, directory, uri, verbose=False):
         self.setDirectory(directory)
@@ -87,46 +88,42 @@ class FilesystemHandler(dav_interface):
 
     def setBaseURI(self, uri):
         """ Sets the base uri """
-
         self.baseuri = uri
+        self.basepath = urllib.parse.urlparse(self.baseuri).path
 
     def uri2local(self,uri):
         """ map uri in baseuri and local part """
-        uparts=urllib.parse.urlparse(uri.decode())
-        fileloc=uparts[2][1:]
-        filename=os.path.join(self.directory, fileloc)
-        filename=os.path.normpath(filename)
+        uparts = urllib.parse.urlparse(uri.decode())
+        pp = [p for p in uparts.path.split('/') if p]
+        if self.basepath:
+            bpp = [p for p in self.basepath.split('/') if p]
+            if not pp or pp[:len(bpp)] != bpp:
+                raise DAV_NotFound
+            pp = pp[len(bpp):]
+        filename = os.path.join(self.directory, *pp)
+        filename = os.path.normpath(filename)
         return filename
 
     def local2uri(self,filename):
         """ map local filename to self.baseuri """
-
-        pnum=len(self.directory.replace("\\","/").split("/"))
-        parts=filename.replace("\\","/").split("/")[pnum:]
-        sparts="/"+"/".join(parts)
-        uri=urllib.parse.urljoin(self.baseuri,sparts)
+        rpath = os.path.relpath(filename, self.directory).replace("\\", "/")
+        uri = self.baseuri + '/' + rpath
         return uri.encode() if isinstance(uri, six.text_type) else uri
-
 
     def get_childs(self, uri, filter=None):
         """ return the child objects as self.baseuris for the given URI """
 
-        fileloc=self.uri2local(uri)
-        filelist=[]
-
-        if os.path.exists(fileloc):
-            if os.path.isdir(fileloc):
-                try:
-                    files=os.listdir(fileloc)
-                except:
-                    raise DAV_NotFound
-
-                for file in files:
-                    newloc=os.path.join(fileloc,file)
-                    filelist.append(self.local2uri(newloc))
-
-                log.info('get_childs: Childs %s' % filelist)
-
+        fileloc = self.uri2local(uri)
+        filelist = []
+        if os.path.isdir(fileloc):
+            try:
+                files=os.listdir(fileloc)
+            except:
+                raise DAV_NotFound
+            for file in files:
+                newloc = os.path.join(fileloc, file)
+                filelist.append(self.local2uri(newloc))
+            log.info('get_childs: Childs %s', filelist)
         return filelist
 
     def _get_listing(self, path):

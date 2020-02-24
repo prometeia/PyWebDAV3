@@ -23,7 +23,7 @@ def test_get(pywebdav_server):
 def test_big_download(pywebdav_server):
     url, user, password, root = pywebdav_server
     fname = 'bigtestfile.xxx'
-    testdata = bytes("BIG TEST BODY X\n" * 2**18, encoding="utf8")
+    testdata = bytes("BIG TEST BODY X\n" * 2**17, encoding="utf8")
     fullname = os.path.join(root, fname)
     with open(fullname, 'wb') as tgfile:
         for _ in range(10):

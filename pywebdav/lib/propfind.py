@@ -191,9 +191,6 @@ class PROPFIND:
         """
         re = doc.createElement("D:response")
 
-        if self._dataclass.baseurl:
-            uri = self._dataclass.baseurl + '/' + '/'.join(uri.split('/')[3:])
-
         # write href information
         uparts = urllib.parse.urlparse(uri)
         fileloc = uparts[2]
@@ -240,9 +237,6 @@ class PROPFIND:
             if nsname != 'DAV:':
                 re.setAttribute("xmlns:ns" + str(nsnum), nsname)
             nsnum += 1
-
-        if self._dataclass.baseurl:
-            uri = self._dataclass.baseurl + '/' + '/'.join(uri.split('/')[3:])
 
         # write href information
         uparts = urllib.parse.urlparse(uri.decode())
