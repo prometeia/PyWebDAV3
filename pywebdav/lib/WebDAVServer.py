@@ -56,11 +56,22 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
     server_version = "DAV/" + __version__
     encode_threshold = 1400  # common MTU
 
-    def send_body(self, DATA, code=None, msg=None, desc=None,
+    def log_headers(self):
+        for head in str(self.headers).splitlines():
+            if head.strip():
+                log.debug(head.strip())
+
+    def send_body(self, DATA, code: int = None, msg=None, desc=None,
                   ctype='application/octet-stream', headers={}):
         """ send a body in one part """
         log.debug("Use send_body method")
 
+        if not isinstance(code, int):
+            try:
+                code = int(code)
+            except ValueError:
+                log.error("Produced wrong fatal code %s, converting into 500", code)
+                code = 500
         self.send_response(code, message=msg)
         self.send_header("Connection", "close")
         self.send_header("Accept-Ranges", "bytes")
@@ -97,8 +108,11 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
 
         self.end_headers()
         if DATA:
-            if isinstance(DATA, str) or isinstance(DATA, six.text_type) or isinstance(DATA, bytes):
-                log.debug("Don't use iterator")
+            if isinstance(DATA, str):
+                log.debug("Writing str DATA")
+                self.wfile.write(DATA.encode('utf8'))
+            elif isinstance(DATA, bytes):
+                log.debug("Writing bytes DATA")
                 self.wfile.write(DATA)
             else:
                 if self._config.DAV.getboolean('http_response_use_iterator'):
@@ -126,16 +140,24 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
         else:
             self.send_body_chunks(DATA, code, msg, desc, ctype, headers)
 
-    def send_body_chunks(self, DATA, code, msg=None, desc=None,
-                         ctype='text/xml"', headers={}):
+    def send_body_chunks(self, DATA, code: int, msg=None, desc=None,
+                         ctype='text/xml"', headers=None):
         """ send a body in chunks """
 
+        headers = headers or {}
         self.responses[207] = (msg, desc)
+
+        if not isinstance(code, int):
+            try:
+                code = int(code)
+            except ValueError:
+                log.error("Produced wrong fatal code %s, converting into 500", code)
+                code = 500
+
         self.send_response(code, message=msg)
         self.send_header("Content-type", ctype)
         self.send_header("Transfer-Encoding", "chunked")
         self.send_header('Date', rfc1123_date())
-
         self._send_dav_version()
 
         for a, v in headers.items():
@@ -283,11 +305,9 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
 
     def do_GET(self):
         """Serve a GET request."""
-
-        log.debug(self.headers)
-
+        self.log_headers()
         try:
-            status_code = self._HEAD_GET(with_body=True)
+            status_code = int(self._HEAD_GET(with_body=True))
             self.log_request(status_code)
             return status_code
         except IOError as e:
@@ -486,7 +506,7 @@ class DAVRequestHandler(AuthServer.AuthRequestHandler, LockManager):
         uri = urllib.parse.unquote(uri).encode()
 
         log.debug("do_PUT: uri = %s" % uri)
-        log.debug('do_PUT: headers = %s' % self.headers)
+        self.log_headers()
         # Handle If-Match
         if 'If-Match' in self.headers:
             log.debug("do_PUT: If-Match %s" % self.headers['If-Match'])

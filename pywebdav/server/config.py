@@ -7,9 +7,8 @@ from ..lib.INI_Parse import Configuration
 USAGE = f"""PyWebDAV server (version {__version__})
 Standalone WebDAV server
 
-Make sure to activate LOCK, UNLOCK using parameter -J if you want
-to use clients like Windows Explorer or Mac OS X Finder that expect
-LOCK working for write support.
+NOTE: If you want to use clients like Windows Explorer or Mac OS X Finder that expect
+LOCK working for write support, be aware *not dectivating* LOCK, UNLOCK using parameter -J.
 
 Usage: ./server.py [OPTIONS]
 Parameters:
@@ -33,7 +32,7 @@ Parameters:
     -m, --mysql     Pass this parameter if you want MySQL based authentication.
                     If you want to use MySQL then the usage of a configuration
                     file is mandatory.
-    -J, --nolock    Deactivate LOCK and UNLOCK mode (WebDAV Version 2).
+    -J, --nolock    Deactivate LOCK and UNLOCK mode (WebDAV Version 2 only).
     -M, --nomime    Deactivate mimetype sniffing. Sniffing is based on magic numbers
                     detection but can be slow under heavy load. If you are experiencing
                     speed problems try to use this parameter.

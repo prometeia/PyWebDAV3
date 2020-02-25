@@ -1,8 +1,7 @@
-from __future__ import absolute_import
 import time
+from threading import RLock
 from six.moves import urllib
 import random
-
 import logging
 
 log = logging.getLogger(__name__)
@@ -12,6 +11,22 @@ from xml.dom import minidom
 
 from .utils import rfc1123_date, IfParser, tokenFinder
 from .errors import *
+
+
+def synchronized(lock):
+    """ Synchronization decorator. """
+
+    def wrap(f):
+        def sync_func(*args, **kw):
+            lock.acquire()
+            try:
+                return f(*args, **kw)
+            finally:
+                lock.release()
+        return sync_func
+    return wrap
+
+LOCKLOCKER = RLock()
 
 tokens_to_lock = {}
 uris_to_token = {}
@@ -76,16 +91,18 @@ class LockManager:
         # because we do not handle children we leave result empty
         return lock.token, result
 
+    @synchronized(LOCKLOCKER)
     def do_UNLOCK(self):
         """ Unlocks given resource """
+        if not self._config.DAV.lockemulation:
+            log.warning("Requested LOCK but it's disabled")
+            return
 
         dc = self.IFACE_CLASS
-
-        if self._config.DAV.getboolean('verbose') is True:
-            log.info('UNLOCKing resource %s' % self.headers)
-
         uri = urllib.parse.urljoin(self.get_baseuri(dc), self.path)
         uri = urllib.parse.unquote(uri)
+        if self._config.DAV.getboolean('verbose'):
+            log.info('UNLOCKing resource %s', uri)
 
         # check lock token - must contain a dash
         if not self.headers.get('Lock-Token', '').find('-')>0:
@@ -97,12 +114,14 @@ class LockManager:
 
         self.send_body(None, '204', 'Ok', 'Ok')
 
+    @synchronized(LOCKLOCKER)
     def do_LOCK(self):
         """ Locking is implemented via in-memory caches. No data is written to disk.  """
+        if not self._config.DAV.lockemulation:
+            log.warning("Requested UNLOCK but it's disabled")
+            return
 
         dc = self.IFACE_CLASS
-
-        log.info('LOCKing resource %s' % self.headers)
 
         body = None
         if 'Content-Length' in self.headers:
@@ -114,6 +133,9 @@ class LockManager:
         uri = urllib.parse.urljoin(self.get_baseuri(dc), self.path)
         uri = urllib.parse.unquote(uri)
         log.info('do_LOCK: uri = %s' % uri)
+
+        if self._config.DAV.getboolean('verbose'):
+            log.info('LOCKing resource %s', uri)
 
         ifheader = self.headers.get('If')
         alreadylocked = self._l_isLocked(uri)
@@ -137,7 +159,7 @@ class LockManager:
                 lock = self._l_getLock(token)
                 self.send_body(lock.asXML(), '200', 'OK', 'OK',
                                 'text/xml; charset="utf-8"',
-                                {'Lock-Token' : '<opaquelocktoken:%s>' % token})
+                                {'Lock-Token' : f'<opaquelocktoken:{token}>'})
 
 
         else:
