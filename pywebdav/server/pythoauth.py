@@ -40,7 +40,13 @@ def _pytho_rest_req(method, url, ttl_hash, retjson=False, ticket=None, **args):
 
 
 class FailedPythoAuth(Exception):
-    pass
+    errcode = 400
+
+class PAUnauthenticated(FailedPythoAuth):
+    errcode = 401
+
+class PAUnauthorized(FailedPythoAuth):
+    errcode = 403
 
 
 class PythoAuthHandler(DAVAuthHandler):
@@ -63,27 +69,44 @@ class PythoAuthHandler(DAVAuthHandler):
         url = self._config.DAV.pythoauthserver + '/api/v0/auth'
         return self._pytho_req('POST', url, get_ttl_hash(), auth=(username, password))
 
-    def is_user_authorized(self, userobj: dict, path, command):
-        # TODO: check command and path against API user details
-        if not userobj or not isinstance(userobj, dict) or not userobj.get('user_dir'):
+    def authorize_user(self, userobj: dict, command):
+        """Verify if user can access.
+
+        Return a boolean to assert authorization, or the specific integer http status code.
+        """
+        if not userobj or not isinstance(userobj, dict) or not userobj.get('user_dir') \
+                or not userobj.get('username'):
+            self.error('Invalid user description for authorization: %s // %s', userobj)
             return False
+        username = userobj['username']
         isadmin = userobj['is_superuser']
 
-        def is_my_area(tgpath):
+        def check_area(tgpath):
             if not tgpath:
                 return False
             tgpp = tgpath.rstrip('/').split('/')
             target = self.IFACE_CLASS.basepath.split('/') + userobj['user_dir'].rstrip('/').split('/')
-            return tgpp[:len(target)] == target \
-                   or isadmin and len(tgpp) == len(target) and tgpp[-1] == target[-1]
+            isusfa = len(tgpp) == len(target) and tgpp[-1] == target[-1]
+            if tgpp[:len(target)] == target or isadmin and isusfa:
+                return
+            if isusfa:
+                # different user area: 401 to force reauth (client basic auth cache clearing)
+                raise PAUnauthenticated(tgpath)
+            raise PAUnauthorized(tgpath)
 
-        if command in ('MKCOL'):
-            return False
-        if command in ('MOVE', 'COPY'):
-            # Checking destination
-            dest_uri = urlsplit(unquote(self.headers.get('Destination') or '')).path
-            return is_my_area(dest_uri)
-        return is_my_area(path)
+        try:
+            check_area(self.path)
+            if command in ('MKCOL'):
+                return False
+            if command in ('MOVE', 'COPY'):
+                # Checking destination
+                dest_uri = urlsplit(unquote(self.headers.get('Destination') or '')).path
+                check_area(dest_uri)
+            self._log(f'Succesfully authorized {username} for {command} on {self.path}')
+            return True
+        except FailedPythoAuth as pa:
+            log.warning("Failed auth %s - %s", pa.errcode, str(pa))
+            return pa.errcode
 
     def get_userinfo(self, user, pw, command):
         """ authenticate user """
@@ -93,15 +116,11 @@ class PythoAuthHandler(DAVAuthHandler):
             return
         try:
             userobj = self._pytho_auth_check(user, pw)
-        except FailedPythoAuth as fe:
-            log.error(fe)
-            userobj = None
+        except FailedPythoAuth as fa:
+            log.error(fa)
+            return fa.errcode
         if not userobj or userobj.get('username') != user:
             self._log(f'Authentication failed for user {user}')
             return 401
         self._log(f'Successfully authenticated user {user} for {command}')
-        if not self.is_user_authorized(userobj, self.path, command):
-            self._log(f'User {user} not authorized for {command} on {self.path}')
-            return 403
-        self._log(f'Succesfully authorized {user} for {command} on {self.path}')
-        return True
+        return self.authorize_user(userobj, command)
